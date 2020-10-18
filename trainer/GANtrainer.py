@@ -10,7 +10,7 @@ import torchvision.utils as vutils
 
 
 class Trainer:
-    def __init__(self, nc=1, nz=100, ngf=64, ndf=64, lr=0.0002, beta1=0.5, ngpu=1):
+    def __init__(self, nc=1, nz=100, ngf=64, ndf=64, lr=0.0002, beta1=0.5, ngpu=1, autosave=None):
         self.nz = nz
         self.dataloader = None
         self.img_list = None
@@ -27,13 +27,15 @@ class Trainer:
         self.fake_label = 0.
         self.optimizerD = optim.Adam(self.netD.parameters(), lr=lr, betas=(beta1, 0.999))
         self.optimizerG = optim.Adam(self.netG.parameters(), lr=lr, betas=(beta1, 0.999))
+        self.result_path = autosave
 
     # Set the dataloader
     def load_data(self, dataloader):
         self.dataloader = dataloader
+        print("Dataloader is prepared!")
 
     # Train the networks
-    def train(self, num_epochs, render=True):
+    def train(self, num_epochs, render=False):
 
         # Check whether the dataloader is None, if so quit the training
         if self.dataloader is None:
@@ -98,8 +100,7 @@ class Trainer:
             self.img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
             # Plot the training result of this epoch
-            if render:
-                self.draw_current_image()
+            self.draw_current_image(epoch, show=render)
 
     # Draw the original image
     def draw_original_image(self):
@@ -108,6 +109,8 @@ class Trainer:
         plt.axis("off")
         plt.title("Training Images")
         plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(self.device)[:64], padding=2, normalize=True).cpu(), (1, 2, 0)))
+        if self.result_path is not None:
+            plt.savefig(self.result_path + "\\origin.png")
         plt.show()
 
     # Plot the loss curves of both the generator and the discriminator
@@ -119,12 +122,17 @@ class Trainer:
         plt.xlabel("iterations")
         plt.ylabel("Loss")
         plt.legend()
+        if self.result_path is not None:
+            plt.savefig(self.result_path + "\\loss.png")
         plt.show()
 
     # Draw the last 64 figures
-    def draw_current_image(self):
+    def draw_current_image(self, current_epoch, show=False):
         plt.figure(figsize=(8, 8))
         plt.axis("off")
-        plt.title("Fake Images")
+        plt.title("Fake Images_" + str(current_epoch))
         plt.imshow(np.transpose(self.img_list[-1], (1, 2, 0)))
-        plt.show()
+        if self.result_path is not None:
+            plt.savefig(self.result_path + "\\fake_" + str(current_epoch) + ".png")
+        if show:
+            plt.show()
